@@ -1,0 +1,12 @@
+---
+- name: Partie Web
+  hosts: webservers
+  become: yes
+  roles:
+    - web
+
+- name: Partie DB
+  hosts: dbservers
+  become: yes
+  roles:
+    - db

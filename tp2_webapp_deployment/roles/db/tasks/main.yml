@@ -1,0 +1,74 @@
+---
+
+# Charger les variables sensibles (vault.yml)
+- name: Charger les variables Vault DB
+  include_vars: ../vars/vault.yml
+  tags: always
+
+- name: Installer MariaDB et modules MySQL
+  tags: 
+    - db
+    - mariadb
+  apt:
+    name:
+      - mariadb-server
+      - python3-pymysql
+    state: present
+    update_cache: yes
+
+- name: Démarrer et activer MariaDB
+  tags:
+    - db
+    - mariadb
+  systemd:
+    name: mariadb
+    state: started
+    enabled: yes
+
+- name: Forcer root MariaDB en authentification unix_socket
+  tags:
+    - db
+    - security
+  shell: |
+    mariadb -e "ALTER USER 'root'@'localhost' IDENTIFIED VIA unix_socket;"
+  args:
+    executable: /bin/bash
+
+- name: Copier schema.sql sur la machine DB
+  tags:
+    - db
+    - schema
+  copy:
+    src: "../tp2_webapp_php/schema.sql"
+    dest: "/tmp/schema.sql"
+
+- name: Créer la base de données
+  tags:
+    - db
+    - initdb
+  community.mysql.mysql_db:
+    name: "{{ db_name }}"
+    state: present
+    login_unix_socket: /run/mysqld/mysqld.sock
+
+- name: Créer l'utilisateur MySQL
+  tags:
+    - db
+    - user
+  community.mysql.mysql_user:
+    name: "{{ db_user }}"
+    password: "{{ db_password }}"     
+    priv: "{{ db_name }}.*:ALL"
+    host: "%"
+    state: present
+    login_unix_socket: /run/mysqld/mysqld.sock
+
+- name: Importer schema.sql
+  tags:
+    - db
+    - schema
+  community.mysql.mysql_db:
+    name: "{{ db_name }}"
+    state: import
+    target: "/tmp/schema.sql"
+    login_unix_socket: /run/mysqld/mysqld.sock

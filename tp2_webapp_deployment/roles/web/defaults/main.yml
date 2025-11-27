@@ -1,0 +1,5 @@
+---
+server_name: "monapp.local"
+site_name: "monapp"
+web_root: "/var/www/monapp"
+site_repo: "https://github.com/Faysal64/ANSIBLE_Playbook_tp2_webapp_php.git"

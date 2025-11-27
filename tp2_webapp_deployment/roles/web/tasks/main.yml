@@ -1,0 +1,57 @@
+---
+# Installer Apache, PHP et Git
+- name: Installer Apache, PHP et Git
+  apt:
+    name:
+      - apache2
+      - php
+      - php-mysql
+      - git
+    state: present
+    update_cache: yes
+
+# Nettoyer le répertoire du site
+- name: Nettoyer le répertoire du site
+  file:
+    path: "{{ web_root }}"
+    state: absent
+
+# Recréer le répertoire du site
+- name: Créer le répertoire du site
+  file:
+    path: "{{ web_root }}"
+    state: directory
+    mode: "0755"
+
+# Cloner le site depuis GitHub
+- name: Cloner le site depuis GitHub
+  git:
+    repo: "{{ site_repo }}"
+    dest: "{{ web_root }}"
+    version: main
+    force: yes
+
+# Appliquer les droits après clonage
+- name: Appliquer les droits sur le site web
+  file:
+    path: "{{ web_root }}"
+    recurse: yes
+    owner: www-data
+    group: www-data
+    mode: "0755"
+
+# Déployer le VirtualHost
+- name: Déployer le VirtualHost
+  template:
+    src: vhost.j2
+    dest: "/etc/apache2/sites-available/{{ site_name }}.conf"
+
+# Activer le site
+- name: Activer le VirtualHost
+  command: a2ensite {{ site_name }}.conf
+  notify: restart apache
+
+# Désactiver le site par défaut
+- name: Désactiver 000-default.conf
+  command: a2dissite 000-default.conf
+  notify: restart apache
